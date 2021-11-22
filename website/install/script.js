@@ -11,19 +11,20 @@ function addVersion(version, date, changelogURL) {
     if (!latest) {
         document.getElementById("latest_version-version").innerHTML = version;
         document.getElementById("latest_version-release").innerHTML = date;
+        document.getElementById("latest_version-changelog").setAttribute("href", changelogURL);
         latest = true
     }
     document.getElementById("all_versions").innerHTML += `
     <div class="version">
         <span class="version-version">${version} </span>
         <span class="version-time">${date}</span>
-        <a class="version-file version-underline" href="/archive/${version}.js" download="dm_java_json"> <i class="bi bi-file-earmark-arrow-down"></i> File </a>
+        <a class="version-file version-underline" href="/archive/${version}/dm_java_json.js" download="dm_java_json"> <i class="bi bi-file-earmark-arrow-down"></i> File </a>
         <div class="tooltip" style="width:initial;">
             <span class="tooltiptext version-copy-tooltip">
                 Copy to clipboard
             </span>
             <a class="version-url version-underline" onclick="copy('version_${version}-url-copy')" onmouseleave="resetCopyTooltip()"> <i class="bi bi-link-45deg"></i> URL </a>
-            <input id="version_${version}-url-copy" type="text" value="/archive/${version}/dm_java_json.js" readonly hidden>
+            <input id="version_${version}-url-copy" type="text" value="https://bug.swdteam.com/archive/${version}/dm_java_json.js" readonly hidden>
         </div>
         <a class="version-changelog version-underline" href="${changelogURL}"> <i class="bi bi-file-earmark-text"></i> Changelog </a>
     </div>`;
