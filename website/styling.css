@@ -55,6 +55,7 @@ main {
     padding: 0px 30px;
     background-color: rgb(255, 115, 148);
     color: white;
+    text-decoration: none;
 }
 
 .buttons>*:hover {
