@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" style="background-color: #36393f;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="./styling.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>Dalek Mod JavaJSON</title>
+</head>
+
+<body style="visibility: hidden;" onkeypress="enterToClick(event)">
+    <div>
+        <header desktop>
+            <a class="header-logo header-icon" href="../">
+                <!-- <img src="" alt="DMJavaJSON" /> -->
+                <i class="bi-boxes"></i>
+                JavaJSON
+            </a>
+            <a class="header-text header-hover" href="">Install</a>
+            <a class="header-text header-hover" href="https://github.com/Bug1312/DM-JavaJSON/issues">Bug Reports</a>
+            <a class="header-text header-hover" href="https://github.com/Bug1312/DM-JavaJSON/issues">Suggestions</a>
+            <a class="header-github header-icon header-hover" href="https://github.com/Bug1312/DM-JavaJSON/">
+                <i class="bi-github"></i>
+            </a>
+            <a class="header-line"></a>
+            <a class="header-scheme_swap header-icon header-hover" onclick="swapScheme()" tabindex="0">
+                <i class="scheme-icon"></i>
+            </a>
+        </header>
+        <header mobile>
+            <a class="header-logo header-icon" href="../">
+                <!-- <img src="" alt="DMJavaJSON" /> -->
+                <i class="bi-boxes"></i>
+                JavaJSON
+            </a>
+            <a class="header-hamburger_menu header-icon" onclick="foldMenu('mobile_nav')" tabindex="0">
+                <i class="bi-list"></i>
+            </a>
+            <div id="mobile_nav" class="mobile_nav" folded="true">
+                <a class="header-text nav-block" href="">Install</a>
+                <a class="header-text nav-block" href="https://github.com/Bug1312/DM-JavaJSON/issues">Bug Reports</a>
+                <a class="header-text nav-block" href="https://github.com/Bug1312/DM-JavaJSON/issues">Suggestions</a>
+                <div class="mobile_nav-left">
+                    <a class="header-github header-icon" href="https://github.com/Bug1312/DM-JavaJSON/">
+                        <i class="bi-github"></i>
+                    </a>
+                </div>
+                <div class="mobile_nav-right">
+                    <a class="header-scheme_swap header-icon" onclick="swapScheme()" tabindex="0">
+                        <i class="scheme-icon"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+    </div>
+    <main>
+        <h1 class="header_with_line"> Installation Methods </h1>
+        <h2>URL - Recommended <i class="bi bi-star-fill"></i></span> </h2>
+        <p>In the PLUGINS window(File -> Plugins), click the
+            <span class="material-icons">cloud_download</span>
+            icon and paste in a version's URL. For the latest, use
+            <div class="tooltip">
+                <span class="tooltiptext">
+                    Copy to clipboard
+                </span>
+                <input id="latest-url" onclick="copy('latest-url')" onmouseleave="resetCopyTooltip()" tabindex="0" title="Click to copy" value="https://bug.swdteam.com/dm_java_json.js" readonly />
+            </div>
+        </p>
+        <h2>Local File</h2>
+        <p>Download a file below, then drag and drop the .js file into Blockbench. Make sure the name isn't edited!</p>
+        <h1 class="header_with_line"> Dalek Mod JavaJSON </h1>
+
+        <div>
+            <div class="latest_version-grid" onload="generateLatest()">
+                <div class="latest_version-title">
+                    <div>
+                        <h2><i class="bi bi-check2-circle latest_version-icon"></i> Latest </h2>
+                        <h5 id="latest_version-version"></h5>
+                        <h5 id="latest_version-release"></h5>
+                    </div>
+                </div>
+                <a id="latest_version-file" class="latest_version-item" tabindex="0" href="/dm_java_json.js" download="dm_java_json">
+                    <div>
+                        <i class="bi bi-file-earmark-arrow-down bigger_icon"></i>
+                        File
+                    </div>
+                </a>
+                <div id="latest_version-url" class="tooltip latest_version-item" tabindex="0" onclick="copy('latest_version-url-copy')" onmouseleave="resetCopyTooltip()">
+                    <div>
+                        <span class="tooltiptext" style="bottom: 105%;">
+                            Copy to clipboard
+                        </span>
+                        <i class="bi bi-link-45deg bigger_icon"></i>
+                        <div> URL <span class="bi bi-star-fill"></span></div>
+                        <input id="latest_version-url-copy" type="text" value="https://bug.swdteam.com/dm_java_json.js" readonly hidden>
+                    </div>
+                </div>
+                <a id="latest_version-changelog" class="latest_version-item" tabindex="0" href="">
+                    <div>
+                        <i class="bi bi-file-earmark-text bigger_icon"></i>
+                        Changelog
+                    </div>
+                </a>
+                <a id="latest_version-bugs" class="latest_version-item" tabindex="0" href="">
+                    <div>
+                        <i class="bi bi-bug bigger_icon"></i>
+                        Known Bugs
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <h2>All Versions</h2>
+        <p><b>Note</b> all in the list below are for getting a <i>specific version</i> of the JavaJSON plugin. Unless you need this, prefer the links above.
+            <br /> All file installs will have to have the updater commented out, URLs work without modifications.</p>
+
+        <div class="button_all_versions-parent">
+            <button id="button_all_versions" class="button_all_versions" onclick="foldMenu('all_versions');updateAllVersButton()">
+                + Show All Versions
+            </button>
+        </div>
+
+        <div id="all_versions" class="all_versions" folded="true">
+            <div class="all_versions-header">
+                <span>Version</span>
+                <span>Time</span>
+                <span class="all_versions-header-2_wide">Installs</span>
+                <span>Information</span>
+            </div>
+        </div>
+    </main>
+</body>
+<script src="../shared.js" type="text/javascript"></script>
+<script src="./script.js" type="text/javascript"></script>
+
+</html>
