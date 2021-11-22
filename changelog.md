@@ -1,6 +1,4 @@
 # Changelog
 
-## Version 0.7.2
-
 - Textures import correctly
-- Updater will not go off if URL is used
+- Updater will turn off if URL is used, at it will be latest or specific version
