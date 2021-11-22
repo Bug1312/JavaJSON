@@ -1,3 +1,5 @@
+if(window.location.href.includes("http://")) window.location.href = window.location.href.replace("http", "https");
+
 function refreshScheme() {
     let root = document.querySelector(":root"),
         icons = document.querySelectorAll(".scheme-icon");
