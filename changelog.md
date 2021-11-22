@@ -1,4 +1,3 @@
 # Changelog
 
-- Textures import correctly
-- Updater will turn off if URL is used, at it will be latest or specific version
+- Root folder is no longer imported as a group

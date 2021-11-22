@@ -39,7 +39,7 @@
         icon: Blockbench.getIconNode("icon-format_java"),
         description: "Imports and Exports Dalek Mod's model format",
         about: "To export you must be in modded entity format",
-        version: "0.7.2",
+        version: "0.7.3",
         variant: "both",
         min_version: "4.0.0",
         tags: ["Dalek Mod"],
@@ -154,9 +154,9 @@
                                 rotation: group.rotation
                             });
 
-                        if (!newgroup.rotation.every(item => item == 0) && !group.group_name)
+                        if (!newgroup.rotation.every(item => item == 0) && !(group.group_name || group.group_name != "root"))
                             group.cubes.forEach(cube => cubeFunc(cube, parent, origin, newgroup.rotation));
-                        else if (!group.group_name)
+                        else if (!(group.group_name || group.group_name != "root"))
                             group.cubes.forEach(cube => cubeFunc(cube, undefined, origin));
                         else {
                             if (parent)
