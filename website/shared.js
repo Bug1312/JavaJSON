@@ -1,4 +1,4 @@
-if(window.location.href.includes("http://")) window.location.href = window.location.href.replace("http", "https");
+if (window.location.href.includes("http://")) window.location.href = window.location.href.replace("http", "https");
 
 function refreshScheme() {
     let root = document.querySelector(":root"),
@@ -15,6 +15,7 @@ function refreshScheme() {
             root.style.setProperty("--hightlight-color-alt", "seagreen");
             root.style.setProperty("--background-color", "white");
             root.style.setProperty("--background-color-alt", "lightgray");
+            root.style.setProperty("--background-color-transparent", "rgba(255, 255, 255, 0.8)");
             icons.forEach(icon => {
                 icon.classList.add("bi-brightness-high");
                 icon.classList.remove("bi-moon");
@@ -30,6 +31,7 @@ function refreshScheme() {
             root.style.setProperty("--hightlight-color-alt", "lightgreen");
             root.style.setProperty("--background-color", "#36393f");
             root.style.setProperty("--background-color-alt", "#2f3136");
+            root.style.setProperty("--background-color-transparent", "rgba(54, 57, 63, 0.8)");
             icons.forEach(icon => {
                 icon.classList.add("bi-moon");
                 icon.classList.remove("bi-brightness-high");
