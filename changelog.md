@@ -1,3 +1,4 @@
 # Changelog
 
-- Root folder is no longer imported as a group
+- Solved Issue #1
+- Removed "root" folder export

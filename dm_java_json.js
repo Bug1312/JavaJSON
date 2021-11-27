@@ -39,7 +39,7 @@
         icon: Blockbench.getIconNode("icon-format_java"),
         description: "Imports and Exports Dalek Mod's model format",
         about: "To export you must be in modded entity format",
-        version: "0.7.3",
+        version: "0.7.4",
         variant: "both",
         min_version: "4.0.0",
         tags: ["Dalek Mod"],
@@ -149,14 +149,14 @@
                                 group.pivot[2]
                             ],
                             newgroup = new Group({
-                                name: group.group_name ? group.group_name : "root",
+                                name: group.group_name,
                                 origin,
-                                rotation: group.rotation
+                                rotation: [-group.rotation[0], group.rotation[1], group.rotation[2]]
                             });
 
-                        if (!newgroup.rotation.every(item => item == 0) && !(group.group_name || group.group_name != "root"))
+                        if (!newgroup.rotation.every(item => item == 0) && !group.group_name)
                             group.cubes.forEach(cube => cubeFunc(cube, parent, origin, newgroup.rotation));
-                        else if (!(group.group_name || group.group_name != "root"))
+                        else if (!group.group_name)
                             group.cubes.forEach(cube => cubeFunc(cube, undefined, origin));
                         else {
                             if (parent)
@@ -196,7 +196,7 @@
                             origin,
                             uv_offset: cube.uv,
                             inflate: cube.inflate,
-                            mirror: cube.mirror,
+                            mirror_uv: cube.mirror,
                             rotation: rotation
                         });
 
@@ -227,7 +227,6 @@
                 },
                 placeholderArray = [{
                     "uuid": "root",
-                    "group_name": "root",
                     "pivot": [0, 24, 0],
                     "rotation": [0, 0, 0],
                     "children": [],
