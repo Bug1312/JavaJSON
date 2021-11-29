@@ -1,4 +1,4 @@
 # Known Bugs
 
 ## GUI
-With the plugin installed, you cannot open the File tab in the menu
+With the plugin installed, you cannot open the File tab without an active project
