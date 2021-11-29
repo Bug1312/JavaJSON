@@ -1,4 +1,4 @@
 # Known Bugs
 
-There is nothing here..
-Woohoo!
+## GUI
+With the plugin installed, you cannot open the File tab in the menu
