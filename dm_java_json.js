@@ -39,7 +39,7 @@
         icon: Blockbench.getIconNode("icon-format_java"),
         description: "Imports and Exports Dalek Mod's model format",
         about: "To export you must be in modded entity format",
-        version: "0.7.4",
+        version: "0.7.5",
         variant: "both",
         min_version: "4.0.0",
         tags: ["Dalek Mod"],
@@ -57,7 +57,7 @@
                 icon: Blockbench.getIconNode("fas.fa-file-download"),
                 description: "Exports your entity model as a DM JSON file",
                 category: "file",
-                condition: () => Project.format.id == Formats.modded_entity.id,
+                condition: () => (Project && Project.format) ? (Project.format.id == Formats.modded_entity.id) : false,
                 click: function() {
                     javaJsonCodec.export();
                 }
