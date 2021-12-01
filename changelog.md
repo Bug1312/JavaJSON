@@ -1,3 +1,3 @@
 # Changelog
 
-- Solved Issue #2
+- Added alpha map compatibility

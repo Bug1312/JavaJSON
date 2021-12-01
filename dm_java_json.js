@@ -39,7 +39,7 @@
         icon: Blockbench.getIconNode("icon-format_java"),
         description: "Imports and Exports Dalek Mod's model format",
         about: "To export you must be in modded entity format",
-        version: "0.7.5",
+        version: "0.7.6",
         variant: "both",
         min_version: "4.0.0",
         tags: ["Dalek Mod"],
@@ -88,7 +88,8 @@
         return parseFloat(num.toFixed(4));
     };
 
-    let javaJsonCodec = new Codec("dm_java_json", {
+    let codecId = "dm_java_json";
+    let javaJsonCodec = new Codec(codecId, {
         name: "Dalek Mod JavaJSON",
         extension: "json",
         remember: true,
@@ -104,8 +105,9 @@
             // Update Project Settings
             Project.texture_width = model.texture_width;
             Project.texture_height = model.texture_height;
-            Project.format.codec = Codecs.dm_java_json;
+            Project.format.codec = Codecs[codecId];
             Project.scale = Number(model.scale);
+            Project.alphamap = (model.alphamap != undefined) ? true : false;
             Project.save_path = path;
             Project.select();
 
@@ -116,8 +118,9 @@
                 {
                     let textureArray = [];
 
-                    if (model.texture) textureArray.push(model.texture.replace(/\.png/g, ""));
-                    if (model.lightmap) textureArray.push(model.lightmap.replace(/\.png/g, ""));
+                    if (model.texture) textureArray.push(model.texture);
+                    if (model.lightmap) textureArray.push(model.lightmap);
+                    if (model.alphamap && model.alphamap != "generated") textureArray.push(model.alphamap);
 
                     textureArray.forEach(tex => {
                         let pathArray = path.split(osfs),
@@ -127,12 +130,13 @@
 
                         pathArray.splice((pathArray.indexOf("assets") + 2) - pathArray.length);
                         newTex.fromJavaLink(tex, pathArray);
-                        newTex.folder = pathArray.splice(pathArray.indexOf(newTex.namespace) + 2).join("/").replace(/\/[^\/]+\.png/g, "");
+                        newTex.folder = pathArray.splice(pathArray.indexOf(newTex.namespace) + 2).join("/").replace(/\/[^/]+$/g, "");
                         newTex.render_mode = "layered";
                         newTex.add();
                     });
 
                     Texture.all[0].select();
+                    if (Texture.all.filter(tex => tex.name.toLowerCase().includes("alphamap")).length) Texture.all.filter(tex => tex.name.toLowerCase().includes("alphamap"))[0].visible = false;
                 }
 
                 // Run through all groups and their cubes
@@ -220,6 +224,7 @@
                     "credit": settings.credit.value,
                     "texture": "",
                     "lightmap": "",
+                    "alphamap": "",
                     "texture_width": Project.texture_width,
                     "texture_height": Project.texture_height,
                     "scale": (Project.scale === undefined) ? 1 : Number(Project.scale),
@@ -244,8 +249,8 @@
 
                     // If folder is not defined, remove folder directory path
                     if (folder != undefined && folder != "")
-                        return `${namespace}:${folder}/${newName}.png`;
-                    else return `${namespace}:${newName}.png`;
+                        return `${namespace}:${folder}/${newName}`;
+                    else return `${namespace}:${newName}`;
                 };
 
                 // Add in file paths
@@ -255,18 +260,27 @@
                     pathArray.splice(-(pathArray.length - pathArray.indexOf("assets") - 2));
                     texture.namespace = pathArray.pop();
                     pathArray = texture.path.split(osfs);
-                    texture.folder = pathArray.splice(pathArray.indexOf(texture.namespace) + 2).join("/").replace(/\/[^\/]+\.png/g, "");
+                    texture.folder = pathArray.splice(pathArray.indexOf(texture.namespace) + 2).join("/").replace(/\/[^/]+$/g, "");
                 });
                 let tex = Cube.all.random().faces.north.getTexture();
 
                 model.texture = (tex) ? getPath(tex.name, tex.folder, tex.namespace) : "null";
 
-                // If texture file with "lightmap" in the name (case-insensitive) of the texture, add a light map
+                // If texture file with "lightmap" in the name (case-insensitive), add a light map
                 if (Texture.all.find(tex => tex.name.toLowerCase().includes("lightmap"))) {
                     let lightMapTex = Texture.all.find(tex => tex.name.toLowerCase().includes("lightmap"));
                     model.lightmap = getPath(lightMapTex.name, lightMapTex.folder, lightMapTex.namespace);
                 } else delete model.lightmap;
 
+                // If model has alphamap, choose to generate or use provided texture with "alphamap" in the name (case-insensitive)
+                if (Project.alphamap) {
+                    if (Texture.all.find(tex => tex.name.toLowerCase().includes("alphamap"))) {
+                        let alphaMapTex = Texture.all.find(tex => tex.name.toLowerCase().includes("alphamap"));
+                        model.alphamap = getPath(alphaMapTex.name, alphaMapTex.folder, alphaMapTex.namespace);
+                    } else {
+                        model.alphamap = "generated";
+                    }
+                } else delete model.lightmap;
             }
 
             // Set Model 
@@ -387,18 +401,27 @@
         },
         export () {
             // Displays and sets scale
-            new Dialog("JavaJsonScale", {
-                title: "JavaJSON Scale",
+            new Dialog("JavaJsonExport", {
+                title: "Export as JavaJSON",
                 lines: [
-                    "<p> If you don't know what this is, press \"Confirm\" </p>",
+                    "<p> Model Scale (if you don't know what this is, leave at 1) </p>",
                     `<div class="dialog_bar" style="height: 32px;">
                     <input type="range" id="model_scale_range" value="${(Project.scale === undefined)? 1 : Project.scale}" min="0" max="4" step="0.02" oninput="modelScaleSyncDM();">
                     <input type="number" class="f_left dark_bordered" id="model_scale_label" min="0" max="4" step="0.02" value="${(Project.scale === undefined)? 1 : Project.scale}" oninput="modelScaleSyncDM(true)">
-                    </div>`
+                    </div><br />`
                 ],
-                onConfirm: function() {
+                form: {
+                    alpha: {
+                        type: "checkbox",
+                        label: "Is this a TARDIS?",
+                        nocolon: true
+                    }
+                },
+                onConfirm: function(formData) {
                     // Set scale
                     Project.scale = Number(document.querySelectorAll("#model_scale_range")[1].value);
+                    // Sets if alpha map is used
+                    Project.alphamap = formData.alpha;
 
                     // Exports file
                     Blockbench.export({
@@ -406,7 +429,7 @@
                         extensions: ["json"],
                         savetype: "text",
                         startpath: Project.save_path,
-                        content: Codecs.dm_java_json.compile(),
+                        content: Codecs[codecId].compile(),
                         name: Project.name
                     }, (path) => {
                         // Save Project as recent
@@ -420,7 +443,7 @@
                         Project.export_path = path;
                     });
 
-                    Project.format.codec = Codecs.dm_java_json;
+                    Project.format.codec = Codecs[codecId];
 
                 }
             }).show();
