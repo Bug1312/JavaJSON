@@ -1,3 +1,3 @@
 # Changelog
 
-- Added alpha map compatibility
+- Fixed not having an alphamap add a value of "" and then remove the lightmap
