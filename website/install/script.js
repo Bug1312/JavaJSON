@@ -18,7 +18,7 @@ function addVersion(version, date, changelogURL) {
     <div class="version">
         <span class="version-version">${version}</span>
         <span class="version-time">${date}</span>
-        <a class="version-file version-underline" href="https://github.com/${repo}/releases/download/v${version}/java_json.js" download="java_json.js"> <i class="bi bi-file-earmark-arrow-down"></i> File </a>
+        <a class="version-file version-underline" href="https://github.com/${repo}/releases/download/${version}/java_json.js" download="java_json.js"> <i class="bi bi-file-earmark-arrow-down"></i> File </a>
         <div class="tooltip" style="width:initial;">
             <span class="tooltiptext version-copy-tooltip">
                 Copy to clipboard
