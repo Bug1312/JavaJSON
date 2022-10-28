@@ -39,7 +39,11 @@
         icon: Blockbench.getIconNode("icon-format_java"),
         description: "Imports and Exports Dalek Mod's model format",
         about: "To export you must be in modded entity format",
+<<<<<<< HEAD:dm_java_json.js
         version: "0.7.7",
+=======
+        version: "1.7.7",
+>>>>>>> main:java_json.js
         variant: "both",
         min_version: "4.0.0",
         tags: ["Dalek Mod"],
