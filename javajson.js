@@ -1,8 +1,8 @@
 (function() {
-    let DMJavaJSONExportAction,
-        DMJavaJSONCreditSetting,
-        downloadURL = "https://bug.swdteam.com/dm_java_json.js";
-
+    let JavaJSONExportAction,
+        JavaJSONCreditSetting,
+        downloadURL = "https://javajson.bug1312.com/javajson";
+  
     // Fetches latest file & compares versions
     function checkVersion(version, fetchURL, title, path) {
         if (!path.includes("http"))
@@ -32,41 +32,34 @@
                 throw err;
             });
     };
-
-    Plugin.register("dm_java_json", {
-        title: "Dalek Mod JSON Format",
+  
+    Plugin.register("javajson", {
+        title: "JavaJSON",
         author: "Bug1312",
         icon: Blockbench.getIconNode("icon-format_java"),
-        description: "Imports and Exports Dalek Mod's model format",
+        description: "Imports and Exports in the JavaJSON model format",
         about: "To export you must be in modded entity format",
-        version: "0.7.7",
+        version: "0.8.0",
         variant: "both",
         min_version: "4.0.0",
-        tags: ["Dalek Mod"],
         onload() {
-            // If on Mobile, warn user
-            if (Blockbench.isMobile == true)
-                Blockbench.showMessageBox({
-                    title: "Mobile Warning",
-                    message: "This device has been identified as a Mobile Device\n\n Due to this, the plugin may not work."
-                });
             // Create export button
-            DMJavaJSONExportAction = new Action({
-                id: "DMJavaJSON",
-                name: "Export Dalek Mod JSON",
+            JavaJSONExportAction = new Action({
+                id: "JavaJSON",
+                name: "Export JavaJSON",
                 icon: Blockbench.getIconNode("fas.fa-file-download"),
-                description: "Exports your entity model as a DM JSON file",
+                description: "Exports your entity model as a JavaJSON file",
                 category: "file",
                 condition: () => (Project && Project.format) ? (Project.format.id == Formats.modded_entity.id) : false,
                 click: function() {
                     javaJsonCodec.export();
                 }
             });
-            MenuBar.addAction(DMJavaJSONExportAction, "file.export");
+            MenuBar.addAction(JavaJSONExportAction, "file.export");
             // Create Credits Setting
-            DMJavaJSONCreditSetting = new Setting("dm_credits", {
-                name: "Dalek Mod JSON Comments",
-                description: "Adds comment to Dalek Mod JSON files"
+            JavaJSONCreditSetting = new Setting("javajson_credits", {
+                name: "JavaJSON Comments",
+                description: "Adds comment to JavaJSON files"
             });
             // Check version and update
             setTimeout(() => {
@@ -75,25 +68,25 @@
         },
         onunload() {
             // Remove export button
-            DMJavaJSONExportAction.delete();
+            JavaJSONExportAction.delete();
         },
         onuninstall() {
             // Remove credit setting; In uninstall so setting doesn't reset after relaunch
-            DMJavaJSONCreditSetting.delete();
+            JavaJSONCreditSetting.delete();
         }
     });
-
+  
     // Converts integer to floating-point decimal
     function F(num) {
         return parseFloat(num.toFixed(4));
     };
-
-    let codecId = "dm_java_json";
+  
+    let codecId = "javajson";
     let javaJsonCodec = new Codec(codecId, {
-        name: "Dalek Mod JavaJSON",
+        name: "JavaJSON",
         extension: "json",
         remember: true,
-        export_action: DMJavaJSONExportAction,
+        export_action: JavaJSONExportAction,
         load_filter: {
             type: "json",
             extensions: ["json"],
@@ -107,38 +100,41 @@
             Project.texture_height = model.texture_height;
             Project.format.codec = Codecs[codecId];
             Project.scale = Number(model.scale);
-            Project.alphamap = (model.alphamap != undefined) ? true : false;
             Project.save_path = path;
             Project.select();
-
+  
             // Adds Model
             {
-
+  
                 //Runs through all textures
                 {
                     let textureArray = [];
-
+  
                     if (model.texture) textureArray.push(model.texture);
-                    if (model.lightmap) textureArray.push(model.lightmap);
-                    if (model.alphamap && model.alphamap != "generated") textureArray.push(model.alphamap);
-
+                    
+                    for (key in model) {
+                      if (key == "alphamap" && model.alphamap == "generated") continue;
+                      if (/map$/.test(key)) // then it's a map
+                        textureArray.push(model[key]);
+                    }
+  
                     textureArray.forEach(tex => {
                         let pathArray = path.split(osfs),
                             newTex = new Texture({
                                 id: tex
                             });
-
+  
                         pathArray.splice((pathArray.indexOf("assets") + 2) - pathArray.length);
                         newTex.fromJavaLink(tex, pathArray);
                         newTex.folder = pathArray.splice(pathArray.indexOf(newTex.namespace) + 2).join("/").replace(/\/[^/]+$/g, "");
                         newTex.render_mode = "layered";
                         newTex.add();
                     });
-
+  
                     Texture.all[0].select();
                     if (Texture.all.filter(tex => tex.name.toLowerCase().includes("alphamap")).length) Texture.all.filter(tex => tex.name.toLowerCase().includes("alphamap"))[0].visible = false;
                 }
-
+  
                 // Run through all groups and their cubes
                 model.groups.forEach(group => {
                     // Groups
@@ -157,7 +153,7 @@
                                 origin,
                                 rotation: [-group.rotation[0], group.rotation[1], group.rotation[2]]
                             });
-
+  
                         if (!newgroup.rotation.every(item => item == 0) && !group.group_name)
                             group.cubes.forEach(cube => cubeFunc(cube, parent, origin, newgroup.rotation));
                         else if (!group.group_name)
@@ -167,15 +163,15 @@
                                 newgroup.addTo(parent).init();
                             else
                                 newgroup.init();
-
+  
                             if (group.children && group.children.length)
                                 group.children.forEach(group => groupFunc(group, newgroup));
-
+  
                             if (group.cubes && group.cubes.length)
                                 group.cubes.forEach(cube => cubeFunc(cube, newgroup, origin));
                         };
                     };
-
+  
                     // Cubes
                     function cubeFunc(cube, parent, origin, rotation) {
                         let newCube = new Cube({
@@ -203,7 +199,7 @@
                             mirror_uv: cube.mirror,
                             rotation: rotation
                         });
-
+  
                         newCube.addTo(parent);
                         newCube.init();
                         if (rotation) {
@@ -212,23 +208,22 @@
                                 moveElementsInSpace(newCube.origin[axis], axis);
                         };
                     };
-
+  
                     groupFunc(group);
                 });
             }
-
+  
             unselectAll();
         },
         compile() {
             let model = {
                     "credit": settings.credit.value,
                     "texture": "",
-                    "lightmap": "",
-                    "alphamap": "",
-                    "texture_width": Project.texture_width,
-                    "texture_height": Project.texture_height,
-                    "scale": (Project.scale === undefined) ? 1 : Number(Project.scale),
-                    "groups": []
+                    // maps
+                    // texture_width
+                    // texture_height
+                    // scale
+                    // groups
                 },
                 placeholderArray = [{
                     "uuid": "root",
@@ -239,50 +234,48 @@
                 }],
                 pastSelection = [].concat(selected);
             // Removes credit based on setting
-            if (!settings.dm_credits)
+            if (!settings.javajson_credits)
                 delete model.credit;
             // Set Textures
             if (Cube.all.length > 0) {
                 // Helper function for getting texture path
-                function getPath(name, folder, namespace = "dalekmod") {
+                function getPath(name, folder, namespace) {
                     let newName = name.replace(/\.[^\.]+$/, "");
-
+  
                     // If folder is not defined, remove folder directory path
                     if (folder != undefined && folder != "")
                         return `${namespace}:${folder}/${newName}`;
                     else return `${namespace}:${newName}`;
                 };
-
+  
                 // Add in file paths
                 Texture.all.forEach(texture => {
                     let pathArray = texture.path.split(osfs);
-
+  
                     pathArray.splice(-(pathArray.length - pathArray.indexOf("assets") - 2));
                     texture.namespace = pathArray.pop();
                     pathArray = texture.path.split(osfs);
                     texture.folder = pathArray.splice(pathArray.indexOf(texture.namespace) + 2).join("/").replace(/\/[^/]+$/g, "");
                 });
                 let tex = Cube.all.random().faces.north.getTexture();
-
+  
                 model.texture = (tex) ? getPath(tex.name, tex.folder, tex.namespace) : "null";
-
-                // If texture file with "lightmap" in the name (case-insensitive), add a light map
-                if (Texture.all.find(tex => tex.name.toLowerCase().includes("lightmap"))) {
-                    let lightMapTex = Texture.all.find(tex => tex.name.toLowerCase().includes("lightmap"));
-                    model.lightmap = getPath(lightMapTex.name, lightMapTex.folder, lightMapTex.namespace);
-                } else delete model.lightmap;
-
-                // If model has alphamap, choose to generate or use provided texture with "alphamap" in the name (case-insensitive)
-                if (Project.alphamap) {
-                    if (Texture.all.find(tex => tex.name.toLowerCase().includes("alphamap"))) {
-                        let alphaMapTex = Texture.all.find(tex => tex.name.toLowerCase().includes("alphamap"));
-                        model.alphamap = getPath(alphaMapTex.name, alphaMapTex.folder, alphaMapTex.namespace);
-                    } else {
-                        model.alphamap = "generated";
-                    }
-                } else delete model.alphamap;
+  
+                // If texture file with "_<name>map" in the name (case-insensitive), add the map
+                const textureMaps = Texture.all.filter(tex => /_[^_]+map/i.test(tex.name));
+                
+                for (tex of textureMaps) {
+                  const mapName = tex.name.toLowerCase().match(/(?<=_)[^_]+map/)[0];
+                  model[mapName] = getPath(tex.name, tex.folder, tex.namespace);
+                }
             }
-
+  
+            // Add other values after the textures
+            model.texture_width = Project.texture_width;
+            model.texture_height = Project.texture_height;
+            model.scale = (Project.scale === undefined) ? 1 : Number(Project.scale);
+            model.groups = [];
+  
             // Set Model 
             {
                 // Add groups to model object
@@ -296,7 +289,7 @@
                             "children": [],
                             "cubes": []
                         };
-
+  
                     if (group.parent != "root") {
                         object.pivot = [-F(group.origin[0] - group.parent.origin[0]), -F(group.origin[1] - group.parent.origin[1]), F(group.origin[2] - group.parent.origin[2])];
                         object.boneParent = group.parent.uuid;
@@ -306,7 +299,7 @@
                 // Adds cubes to model object
                 for (let i = 0; i < Cube.all.length; i++) {
                     let cube = Cube.all[i];
-
+  
                     if (cube.rotation[0] != 0 || cube.rotation[1] != 0 || cube.rotation[2] != 0) { // If cube has rotation
                         // Move cube
                         cube.select();
@@ -324,7 +317,7 @@
                                 "mirror": cube.mirror_uv,
                             }]
                         };
-
+  
                         if (cube.parent != "root") {
                             object.pivot = [
                                 F(cube.parent.origin[0] - cube.origin[0]),
@@ -347,7 +340,7 @@
                                 "mirror": cube.mirror_uv,
                             },
                             parent = (cube.parent.uuid) ? cube.parent.uuid : "root";
-
+  
                         if (cube.parent != "root") {
                             object.origin = [
                                 F(cube.parent.origin[0] - cube.to[0]),
@@ -362,13 +355,13 @@
                 for (let i = placeholderArray.filter(bone => bone.boneParent != undefined).length - 1; i >= 0; i--) {
                     let object = placeholderArray.filter(bone => bone.boneParent != undefined)[i],
                         uuid = object.boneParent.toString();
-
+  
                     // Delete values we won't have access to later
                     delete object.boneParent; // Removes bone parent
                     delete object.uuid; // Removes uuid
                     if (object.children.length == 0) delete object.children; // Removes child array if empty
                     if (object.cubes.length == 0) delete object.cubes; // Removes cube array if empty
-
+  
                     placeholderArray.filter(element => element.uuid == uuid)[0].children.push(object);
                     placeholderArray.splice(placeholderArray.findIndex(element => element == object), 1);
                 };
@@ -385,13 +378,13 @@
                 // Sets object data to array
                 model.groups = placeholderArray;
             }
-
+  
             // Resets selection
             unselectAll();
             pastSelection.forEach(element => element.select({
                 shiftKey: true
             }));
-
+  
             return JSON.stringify(model, (key, value) => {
                 // Make arrays (apart from groups, cubes, and children) inline
                 if (value instanceof Array && !(key == "groups" || key == "cubes" || key == "children"))
@@ -406,23 +399,14 @@
                 lines: [
                     "<p> Model Scale (if you don't know what this is, leave at 1) </p>",
                     `<div class="dialog_bar" style="height: 32px;">
-                    <input type="range" id="model_scale_range" value="${(Project.scale === undefined)? 1 : Project.scale}" min="0" max="4" step="0.02" oninput="modelScaleSyncDM();">
-                    <input type="number" class="f_left dark_bordered" id="model_scale_label" min="0" max="4" step="0.02" value="${(Project.scale === undefined)? 1 : Project.scale}" oninput="modelScaleSyncDM(true)">
+                    <input type="range" id="model_scale_range" value="${(Project.scale === undefined)? 1 : Project.scale}" min="0" max="4" step="0.02" oninput="modelScaleSyncJavaJSON();">
+                    <input type="number" class="f_left dark_bordered" id="model_scale_label" min="0" max="4" step="0.02" value="${(Project.scale === undefined)? 1 : Project.scale}" oninput="modelScaleSyncJavaJSON(true)">
                     </div><br />`
                 ],
-                form: {
-                    alpha: {
-                        type: "checkbox",
-                        label: "Is this a TARDIS?",
-                        nocolon: true
-                    }
-                },
                 onConfirm: function(formData) {
                     // Set scale
                     Project.scale = Number(document.querySelectorAll("#model_scale_range")[1].value);
-                    // Sets if alpha map is used
-                    Project.alphamap = formData.alpha;
-
+  
                     // Exports file
                     Blockbench.export({
                         type: "JSON",
@@ -442,21 +426,21 @@
                         Project.save_path = path;
                         Project.export_path = path;
                     });
-
+  
                     Project.format.codec = Codecs[codecId];
-
+  
                 }
             }).show();
         }
     });
-
+  
     // Sets format; Codec class does not have ability to set format through param 2
     javaJsonCodec.format = Formats.modded_entity;
-
-})();
-
-// Function to update slider; Must be outside main function to be avaliable
-function modelScaleSyncDM(label) {
+  
+  })();
+  
+  // Function to update slider; Must be outside main function to be avaliable
+  function modelScaleSyncJavaJSON(label) {
     if (label) {
         let size = document.querySelectorAll("#model_scale_label")[1].value;
         document.querySelectorAll("#model_scale_range")[1].value = size;
@@ -464,4 +448,5 @@ function modelScaleSyncDM(label) {
         let size = document.querySelectorAll("#model_scale_range")[1].value;
         document.querySelectorAll("#model_scale_label")[1].value = size;
     };
-};
+  }; 
+  
