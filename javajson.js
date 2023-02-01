@@ -39,7 +39,7 @@
         icon: Blockbench.getIconNode("icon-format_java"),
         description: "Imports and Exports in the JavaJSON model format",
         about: "To export you must be in modded entity format",
-        version: "0.8.0",
+        version: "0.8.1",
         variant: "both",
         min_version: "4.0.0",
         onload() {
@@ -396,16 +396,18 @@
             // Displays and sets scale
             new Dialog("JavaJsonExport", {
                 title: "Export as JavaJSON",
-                lines: [
-                    "<p> Model Scale (if you don't know what this is, leave at 1) </p>",
-                    `<div class="dialog_bar" style="height: 32px;">
-                    <input type="range" id="model_scale_range" value="${(Project.scale === undefined)? 1 : Project.scale}" min="0" max="4" step="0.02" oninput="modelScaleSyncJavaJSON();">
-                    <input type="number" class="f_left dark_bordered" id="model_scale_label" min="0" max="4" step="0.02" value="${(Project.scale === undefined)? 1 : Project.scale}" oninput="modelScaleSyncJavaJSON(true)">
-                    </div><br />`
-                ],
+                form: {
+                    scale: {
+                        label: "Model Scale",
+                        type: "range",
+                        value: Number(Project.scale) ?? 1,
+                        max: 4,
+                        step: 0.2
+                    }
+                },
                 onConfirm: function(formData) {
                     // Set scale
-                    Project.scale = Number(document.querySelectorAll("#model_scale_range")[1].value);
+                    Project.scale = formData.scale;
   
                     // Exports file
                     Blockbench.export({
@@ -436,17 +438,5 @@
   
     // Sets format; Codec class does not have ability to set format through param 2
     javaJsonCodec.format = Formats.modded_entity;
-  
-  })();
-  
-  // Function to update slider; Must be outside main function to be avaliable
-  function modelScaleSyncJavaJSON(label) {
-    if (label) {
-        let size = document.querySelectorAll("#model_scale_label")[1].value;
-        document.querySelectorAll("#model_scale_range")[1].value = size;
-    } else {
-        let size = document.querySelectorAll("#model_scale_range")[1].value;
-        document.querySelectorAll("#model_scale_label")[1].value = size;
-    };
-  }; 
+})();
   
