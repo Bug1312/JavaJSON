@@ -1,36 +1,29 @@
 (function() {
-    let JavaJSONExportAction,
-        JavaJSONCreditSetting,
-        downloadURL = "https://javajson.bug1312.com/javajson";
+    let JavaJSONExportAction, JavaJSONCreditSetting;
+    const downloadURL = "https://javajson.bug1312.com/latest";
   
     // Fetches latest file & compares versions
-    function checkVersion(version, fetchURL, title, path) {
+    function checkVersion(version, fetchURL, title, id, path) {
         if (!path.includes("http"))
             fetch(fetchURL)
             .then(response => {
                 response.text().then(data => {
+                    // Make sure the filename is in-sync with the ID
+                    if (id !== "latest") data = data.replace('Plugin.register("latest"', `Plugin.register("${id}"`);
+
                     // Get versions
-                    let newVersion =
-                        Number(data.match(/(?<=version\s*:).+/)[0].match(/(?<=('|")).+(?=('|"))/)[0].replaceAll(".", "")),
+                    const newVersionString = data.match(/(?<=version\s*:).+/)[0].match(/(?<=('|")).+(?=('|"))/)[0],
+                        newVersion = Number(newVersionString.replaceAll(".", "")),
                         currentVersion = version.replaceAll(".", "");
+
                     // Compare versions
                     if (newVersion && newVersion > currentVersion) {
-                        fs.writeFile(path, data, (err) => {
-                            if (err) throw err;
-                        });
-                        Blockbench.showMessageBox({
-                            title: `${title} Update!`,
-                            message: `The plugin, ${title}, has updated! Would you like to restart to apply the changes?`,
-                            buttons: ["Yes", "No"]
-                        }, function(result) {
-                            if (result == 0)
-                                Blockbench.reload();
-                        });
+                        fs.writeFile(path, data, (err) => { if (err) throw err; });
+                        Plugins.all.find(p => p.id === id)?.reload();
+                        Blockbench.showQuickMessage(`${title} has updated to ${newVersionString}!`);
                     };
                 });
-            }).catch(err => {
-                throw err;
-            });
+            }).catch(err => { throw err; });
     };
   
     Plugin.register("javajson", {
@@ -39,7 +32,7 @@
         icon: Blockbench.getIconNode("icon-format_java"),
         description: "Imports and Exports in the JavaJSON model format",
         about: "To export you must be in modded entity format",
-        version: "0.8.1",
+        version: "0.9.0",
         variant: "both",
         min_version: "4.0.0",
         onload() {
@@ -51,9 +44,7 @@
                 description: "Exports your entity model as a JavaJSON file",
                 category: "file",
                 condition: () => (Project && Project.format) ? (Project.format.id == Formats.modded_entity.id) : false,
-                click: function() {
-                    javaJsonCodec.export();
-                }
+                click: () => javaJsonCodec.export()
             });
             MenuBar.addAction(JavaJSONExportAction, "file.export");
             // Create Credits Setting
@@ -63,7 +54,7 @@
             });
             // Check version and update
             setTimeout(() => {
-                checkVersion(this.version, downloadURL, this.title, this.path);
+                checkVersion(this.version, downloadURL, this.title, this.id, this.path);
             }, 500);
         },
         onunload() {
@@ -81,7 +72,7 @@
         return parseFloat(num.toFixed(4));
     };
   
-    let codecId = "javajson";
+    const codecId = "javajson";
     let javaJsonCodec = new Codec(codecId, {
         name: "JavaJSON",
         extension: "json",
@@ -99,127 +90,99 @@
             Project.texture_width = model.texture_width;
             Project.texture_height = model.texture_height;
             Project.format.codec = Codecs[codecId];
-            Project.scale = Number(model.scale);
+            Project.java_json__scale = Number(model.scale);
             Project.save_path = path;
+            Project.export_path = path;
             Project.select();
   
-            // Adds Model
-            {
-  
-                //Runs through all textures
-                {
-                    let textureArray = [];
-  
-                    if (model.texture) textureArray.push(model.texture);
-                    
-                    for (key in model) {
-                      if (key == "alphamap" && model.alphamap == "generated") continue;
-                      if (/map$/.test(key)) // then it's a map
-                        textureArray.push(model[key]);
-                    }
-  
-                    textureArray.forEach(tex => {
-                        let pathArray = path.split(osfs),
-                            newTex = new Texture({
-                                id: tex
-                            });
-  
-                        pathArray.splice((pathArray.indexOf("assets") + 2) - pathArray.length);
-                        newTex.fromJavaLink(tex, pathArray);
-                        newTex.folder = pathArray.splice(pathArray.indexOf(newTex.namespace) + 2).join("/").replace(/\/[^/]+$/g, "");
-                        newTex.render_mode = "layered";
-                        newTex.add();
-                    });
-  
-                    Texture.all[0].select();
-                    if (Texture.all.filter(tex => tex.name.toLowerCase().includes("alphamap")).length) Texture.all.filter(tex => tex.name.toLowerCase().includes("alphamap"))[0].visible = false;
-                }
-  
-                // Run through all groups and their cubes
-                model.groups.forEach(group => {
-                    // Groups
-                    function groupFunc(group, parent) {
-                        let origin = parent ? [
-                                parent.origin[0] - group.pivot[0],
-                                parent.origin[1] - group.pivot[1],
-                                parent.origin[2] + group.pivot[2]
-                            ] : [
-                                -group.pivot[0],
-                                24 - group.pivot[1],
-                                group.pivot[2]
-                            ],
-                            newgroup = new Group({
-                                name: group.group_name,
-                                origin,
-                                rotation: [-group.rotation[0], group.rotation[1], group.rotation[2]]
-                            });
-  
-                        if (!newgroup.rotation.every(item => item == 0) && !group.group_name)
-                            group.cubes.forEach(cube => cubeFunc(cube, parent, origin, newgroup.rotation));
-                        else if (!group.group_name)
-                            group.cubes.forEach(cube => cubeFunc(cube, undefined, origin));
-                        else {
-                            if (parent)
-                                newgroup.addTo(parent).init();
-                            else
-                                newgroup.init();
-  
-                            if (group.children && group.children.length)
-                                group.children.forEach(group => groupFunc(group, newgroup));
-  
-                            if (group.cubes && group.cubes.length)
-                                group.cubes.forEach(cube => cubeFunc(cube, newgroup, origin));
-                        };
-                    };
-  
-                    // Cubes
-                    function cubeFunc(cube, parent, origin, rotation) {
-                        let newCube = new Cube({
-                            to: parent ? [
-                                parent.origin[0] - cube.origin[0],
-                                parent.origin[1] - cube.origin[1],
-                                parent.origin[2] + cube.origin[2] + cube.size[2]
-                            ] : [
-                                -cube.origin[0],
-                                -cube.origin[1],
-                                cube.origin[2] + cube.size[2]
-                            ],
-                            from: parent ? [
-                                parent.origin[0] - cube.origin[0] - cube.size[0],
-                                parent.origin[1] - cube.origin[1] - cube.size[1],
-                                parent.origin[2] + cube.origin[2]
-                            ] : [
-                                -cube.origin[0] - cube.size[0],
-                                -cube.origin[1] - cube.size[1],
-                                cube.origin[2]
-                            ],
-                            origin,
-                            uv_offset: cube.uv,
-                            inflate: cube.inflate,
-                            mirror_uv: cube.mirror,
-                            rotation: rotation
-                        });
-  
-                        newCube.addTo(parent);
-                        newCube.init();
-                        if (rotation) {
-                            newCube.select();
-                            for (axis = 0; axis < 3; axis++)
-                                moveElementsInSpace(newCube.origin[axis], axis);
-                        };
-                    };
-  
-                    groupFunc(group);
-                });
+            // Get textures
+            const textureArray = [];
+            if (model.texture) textureArray.push(model.texture);
+            
+            for (key in model) {
+                if (key == "alphamap" && model.alphamap == "generated") continue; // Deprecated
+                if (/map$/i.test(key)) // then it's a map
+                    textureArray.push(model[key]);
             }
-  
+
+            textureArray.forEach(tex => {
+                const pathArray = path.split(osfs),
+                    newTex = new Texture({ id: tex });
+
+                pathArray.splice((pathArray.indexOf("assets") + 2) - pathArray.length);
+                newTex.fromJavaLink(tex, pathArray);
+                newTex.folder = pathArray.splice(pathArray.indexOf(newTex.namespace) + 2).join("/").replace(/\/[^/]+$/g, "");
+                newTex.render_mode = "layered";
+                newTex.visible = false;
+                newTex.add();
+            });
+
+            Texture.all[0]?.select();
+            if (Texture.all[0]) Texture.all[0].visible = true;
+
+            function groupFunc(group, parent) {
+                const newgroup = new Group({
+                    name: group.group_name,
+                    origin: parent ? [
+                        parent.origin[0] - group.pivot[0],
+                        parent.origin[1] - group.pivot[1],
+                        parent.origin[2] + group.pivot[2]
+                    ] : [
+                        -group.pivot[0],
+                        24 - group.pivot[1],
+                        group.pivot[2]
+                    ],
+                    rotation: [-group.rotation[0], group.rotation[1], group.rotation[2]]
+                });
+            
+                newgroup.addTo(parent).init();
+
+                group.cubes?.forEach(cube => cubeFunc(cube, newgroup));
+
+                if (!group.group_name) newgroup.resolve();
+                else group.children?.forEach(group => groupFunc(group, newgroup));
+            }
+
+            function cubeFunc(cube, parent) {
+                const newCube = new Cube({
+                    to: parent ? [
+                        parent.origin[0] - cube.origin[0],
+                        parent.origin[1] - cube.origin[1],
+                        parent.origin[2] + cube.origin[2] + cube.size[2]
+                    ] : [
+                        -cube.origin[0],
+                        -cube.origin[1],
+                        cube.origin[2] + cube.size[2]
+                    ],
+                    from: parent ? [
+                        parent.origin[0] - cube.origin[0] - cube.size[0],
+                        parent.origin[1] - cube.origin[1] - cube.size[1],
+                        parent.origin[2] + cube.origin[2]
+                    ] : [
+                        -cube.origin[0] - cube.size[0],
+                        -cube.origin[1] - cube.size[1],
+                        cube.origin[2]
+                    ],
+                    origin: parent?.origin ?? [0, 0, 0],
+                    uv_offset: cube.uv,
+                    inflate: cube.inflate,
+                    mirror_uv: cube.mirror,
+                });
+
+                newCube.addTo(parent);
+                newCube.init();
+            }
+
+            // Run through all groups and their cubes
+            model.groups.forEach(group => groupFunc(group, null));    
+            
             unselectAll();
         },
         compile() {
-            let model = {
+            const model = {
                     "credit": settings.credit.value,
                     "texture": "",
-                    // maps
+                    // ...maps
                     // texture_width
                     // texture_height
                     // scale
@@ -232,22 +195,13 @@
                     "children": [],
                     "cubes": []
                 }],
-                pastSelection = [].concat(selected);
-            // Removes credit based on setting
-            if (!settings.javajson_credits)
-                delete model.credit;
+                pastSelection = [...selected];
+
+            // Removes credit based on settings
+            if (!settings.javajson_credits || !settings.credit.value) delete model.credit;
+
             // Set Textures
-            if (Cube.all.length > 0) {
-                // Helper function for getting texture path
-                function getPath(name, folder, namespace) {
-                    let newName = name.replace(/\.[^\.]+$/, "");
-  
-                    // If folder is not defined, remove folder directory path
-                    if (folder != undefined && folder != "")
-                        return `${namespace}:${folder}/${newName}`;
-                    else return `${namespace}:${newName}`;
-                };
-  
+            if (Cube.all.length > 0) { 
                 // Add in file paths
                 Texture.all.forEach(texture => {
                     let pathArray = texture.path.split(osfs);
@@ -257,128 +211,127 @@
                     pathArray = texture.path.split(osfs);
                     texture.folder = pathArray.splice(pathArray.indexOf(texture.namespace) + 2).join("/").replace(/\/[^/]+$/g, "");
                 });
-                let tex = Cube.all.random().faces.north.getTexture();
+                const tex = Cube.all.random().faces.north.getTexture();
   
-                model.texture = (tex) ? getPath(tex.name, tex.folder, tex.namespace) : "null";
+                model.texture = tex?.javaTextureLink() ?? "";
   
                 // If texture file with "_<name>map" in the name (case-insensitive), add the map
                 const textureMaps = Texture.all.filter(tex => /_[^_]+map/i.test(tex.name));
                 
-                for (tex of textureMaps) {
+                for (const tex of textureMaps) {
                   const mapName = tex.name.toLowerCase().match(/(?<=_)[^_]+map/)[0];
-                  model[mapName] = getPath(tex.name, tex.folder, tex.namespace);
+                  model[mapName] = tex.javaTextureLink();
                 }
             }
   
             // Add other values after the textures
             model.texture_width = Project.texture_width;
             model.texture_height = Project.texture_height;
-            model.scale = (Project.scale === undefined) ? 1 : Number(Project.scale);
+            model.scale = (Project.java_json__scale === undefined) ? 1 : Number(Project.java_json__scale);
             model.groups = [];
   
-            // Set Model 
-            {
-                // Add groups to model object
-                for (let i = 0; i < Group.all.length; i++) {
-                    let group = Group.all[i],
-                        object = {
-                            "uuid": group.uuid,
-                            "group_name": group.name,
-                            "pivot": [-F(group.origin[0]), F(24 - group.origin[1]), F(group.origin[2])],
-                            "rotation": [-F(group.rotation[0]), F(group.rotation[1]), F(group.rotation[2])],
-                            "children": [],
-                            "cubes": []
-                        };
-  
-                    if (group.parent != "root") {
-                        object.pivot = [-F(group.origin[0] - group.parent.origin[0]), -F(group.origin[1] - group.parent.origin[1]), F(group.origin[2] - group.parent.origin[2])];
-                        object.boneParent = group.parent.uuid;
+            // Add groups to model object
+            for (let i = 0; i < Group.all.length; i++) {
+                const group = Group.all[i],
+                    object = {
+                        "uuid": group.uuid,
+                        "group_name": group.name,
+                        "pivot": [-F(group.origin[0]), F(24 - group.origin[1]), F(group.origin[2])],
+                        "rotation": [-F(group.rotation[0]), F(group.rotation[1]), F(group.rotation[2])],
+                        "children": [],
+                        "cubes": []
                     };
-                    placeholderArray.push(object);
+
+                if (group.parent != "root") {
+                    object.pivot = [-F(group.origin[0] - group.parent.origin[0]), -F(group.origin[1] - group.parent.origin[1]), F(group.origin[2] - group.parent.origin[2])];
+                    object.boneParent = group.parent.uuid;
                 };
-                // Adds cubes to model object
-                for (let i = 0; i < Cube.all.length; i++) {
-                    let cube = Cube.all[i];
-  
-                    if (cube.rotation[0] != 0 || cube.rotation[1] != 0 || cube.rotation[2] != 0) { // If cube has rotation
-                        // Move cube
-                        cube.select();
-                        for (axis = 0; axis < 3; axis++)
-                            moveElementsInSpace(-cube.origin[axis], axis);
-                        let object = {
-                            "pivot": [-F(cube.origin[0]), F(24 - cube.origin[1]), F(cube.origin[2])],
-                            "rotation": [-F(cube.rotation[0]), F(cube.rotation[1]), F(cube.rotation[2])],
-                            "children": [],
-                            "cubes": [{
-                                "uv": cube.uv_offset,
-                                "size": [F(cube.size(0, true)), F(cube.size(1, true)), F(cube.size(2, true))],
-                                "origin": [-F(cube.to[0]), -F(cube.to[1]), F(cube.from[2])],
-                                "inflate": F(cube.inflate),
-                                "mirror": cube.mirror_uv,
-                            }]
-                        };
-  
-                        if (cube.parent != "root") {
-                            object.pivot = [
-                                F(cube.parent.origin[0] - cube.origin[0]),
-                                F(cube.parent.origin[1] - cube.origin[1]),
-                                F(cube.origin[2] - cube.parent.origin[2])
-                            ];
-                            placeholderArray.find(bone => bone.uuid == cube.parent.uuid).children.push(object);
-                        } else {
-                            placeholderArray.push(object);
-                        };
-                        // Place cube back
-                        for (axis = 0; axis < 3; axis++)
-                            moveElementsInSpace(cube.origin[axis], axis);
-                    } else { // If cube doesn"t have rotation
-                        let object = {
-                                "uv": cube.uv_offset,
-                                "size": [F(cube.size(0, true)), F(cube.size(1, true)), F(cube.size(2, true))],
-                                "origin": [-F(cube.to[0]), -F(cube.to[1]), F(cube.from[2])],
-                                "inflate": F(cube.inflate),
-                                "mirror": cube.mirror_uv,
-                            },
-                            parent = (cube.parent.uuid) ? cube.parent.uuid : "root";
-  
-                        if (cube.parent != "root") {
-                            object.origin = [
-                                F(cube.parent.origin[0] - cube.to[0]),
-                                F(cube.parent.origin[1] - cube.to[1]),
-                                F(cube.from[2] - cube.parent.origin[2])
-                            ];
-                        };
-                        placeholderArray.find(bone => bone.uuid == parent).cubes.push(object);
+                placeholderArray.push(object);
+            };
+
+            // Adds cubes to model object
+            for (let i = 0; i < Cube.all.length; i++) {
+                const cube = Cube.all[i];
+
+                if (!cube.rotation.every(r => r === 0)) { // If cube has rotation
+                    // Move cube
+                    cube.select();
+                    const origin = [...cube.origin];
+                    for (let axis = 0; axis < 3; axis++) moveElementsInSpace(-cube.origin[axis], axis);
+                    
+                    const object = {
+                        "pivot": [-F(origin[0]), F(24 - origin[1]), F(origin[2])],
+                        "rotation": [-F(cube.rotation[0]), F(cube.rotation[1]), F(cube.rotation[2])],
+                        "children": [],
+                        "cubes": [{
+                            "uv": cube.uv_offset,
+                            "size": [F(cube.size(0, true)), F(cube.size(1, true)), F(cube.size(2, true))],
+                            "origin": [-F(cube.to[0]), -F(cube.to[1]), F(cube.from[2])],
+                            "inflate": F(cube.inflate),
+                            "mirror": cube.mirror_uv,
+                        }]
                     };
+
+                    if (cube.parent != "root") {
+                        object.pivot = [
+                            F(cube.parent.origin[0] - cube.origin[0]),
+                            F(cube.parent.origin[1] - cube.origin[1]),
+                            F(cube.origin[2] - cube.parent.origin[2])
+                        ];
+                        placeholderArray.find(bone => bone.uuid == cube.parent.uuid).children.push(object);
+                    } else {
+                        placeholderArray.push(object);
+                    };
+                    // Place cube back
+                    for (let axis = 0; axis < 3; axis++) moveElementsInSpace(origin[axis], axis);
+                } else { // If cube doesn"t have rotation
+                    const object = {
+                            "uv": cube.uv_offset,
+                            "size": [F(cube.size(0, true)), F(cube.size(1, true)), F(cube.size(2, true))],
+                            "origin": [-F(cube.to[0]), -F(cube.to[1]), F(cube.from[2])],
+                            "inflate": F(cube.inflate),
+                            "mirror": cube.mirror_uv,
+                        },
+                        parent = (cube.parent?.uuid) ?? "root";
+
+                    if (cube.parent != "root") {
+                        object.origin = [
+                            F(cube.parent.origin[0] - cube.to[0]),
+                            F(cube.parent.origin[1] - cube.to[1]),
+                            F(cube.from[2] - cube.parent.origin[2])
+                        ];
+                    };
+                    placeholderArray.find(bone => bone.uuid == parent).cubes.push(object);
                 };
-                // Add each child to their respective parent
-                for (let i = placeholderArray.filter(bone => bone.boneParent != undefined).length - 1; i >= 0; i--) {
-                    let object = placeholderArray.filter(bone => bone.boneParent != undefined)[i],
-                        uuid = object.boneParent.toString();
-  
-                    // Delete values we won't have access to later
-                    delete object.boneParent; // Removes bone parent
-                    delete object.uuid; // Removes uuid
-                    if (object.children.length == 0) delete object.children; // Removes child array if empty
-                    if (object.cubes.length == 0) delete object.cubes; // Removes cube array if empty
-  
-                    placeholderArray.filter(element => element.uuid == uuid)[0].children.push(object);
-                    placeholderArray.splice(placeholderArray.findIndex(element => element == object), 1);
-                };
-                // If there are no cubes in root, delete root (saves space)
-                if (!placeholderArray[0].cubes.length)
-                    placeholderArray.splice(0, 1);
-                // Removes groups' unneeded data
-                for (i = 0; i < placeholderArray.length; i++) {
-                    let group = placeholderArray[i];
-                    delete group.uuid;
-                    if (group.children.length == 0) delete group.children;
-                    if (group.cubes.length == 0) delete group.cubes;
-                }
-                // Sets object data to array
-                model.groups = placeholderArray;
+            };
+
+            // Add each child to their respective parent
+            for (let i = placeholderArray.filter(bone => bone.boneParent != undefined).length - 1; i >= 0; i--) {
+                const object = placeholderArray.filter(bone => bone.boneParent != undefined)[i],
+                    uuid = object.boneParent.toString();
+
+                // Delete values we won't have access to later
+                delete object.boneParent; // Removes bone parent
+                delete object.uuid; // Removes uuid
+                if (!object.children?.length) delete object.children; // Removes child array if empty
+                if (!object.cubes?.length) delete object.cubes; // Removes cube array if empty
+
+                placeholderArray.filter(element => element.uuid == uuid)[0].children.push(object);
+                placeholderArray.splice(placeholderArray.findIndex(element => element == object), 1);
+            };
+            
+            // If there are no cubes in root, delete root (saves space)
+            if (!placeholderArray[0]?.cubes?.length) placeholderArray.splice(0, 1);
+            // Removes groups' unneeded data
+            for (let i = 0; i < placeholderArray.length; i++) {
+                const group = placeholderArray[i];
+                delete group.uuid;
+                if (!group.children?.length) delete group.children;
+                if (!group.cubes?.length) delete group.cubes;
             }
-  
+            // Sets object data to array
+            model.groups = placeholderArray;
+ 
             // Resets selection
             unselectAll();
             pastSelection.forEach(element => element.select({
@@ -387,7 +340,7 @@
   
             return JSON.stringify(model, (key, value) => {
                 // Make arrays (apart from groups, cubes, and children) inline
-                if (value instanceof Array && !(key == "groups" || key == "cubes" || key == "children"))
+                if (value instanceof Array && !(key === "groups" || key === "cubes" || key === "children"))
                     return JSON.stringify(value);
                 return value;
             }, "\t").replace(/((?<=\])"|"(?=\[))/g, "");
@@ -400,14 +353,14 @@
                     scale: {
                         label: "Model Scale",
                         type: "range",
-                        value: Number(Project.scale) ?? 1,
+                        value: Project.java_json__scale ?? 1,
                         max: 4,
                         step: 0.2
                     }
                 },
                 onConfirm: function(formData) {
                     // Set scale
-                    Project.scale = formData.scale;
+                    Project.java_json__scale = formData.scale;
   
                     // Exports file
                     Blockbench.export({
@@ -417,20 +370,9 @@
                         startpath: Project.save_path,
                         content: Codecs[codecId].compile(),
                         name: Project.name
-                    }, (path) => {
-                        // Save Project as recent
-                        addRecentProject({
-                            name: Project.name,
-                            path: path,
-                            icon: Format.icon
-                        });
-                        // Sets Project's save & export path
-                        Project.save_path = path;
-                        Project.export_path = path;
-                    });
+                    }, (path) => Codecs[codecId].afterDownload(path));
   
                     Project.format.codec = Codecs[codecId];
-  
                 }
             }).show();
         }
@@ -439,4 +381,3 @@
     // Sets format; Codec class does not have ability to set format through param 2
     javaJsonCodec.format = Formats.modded_entity;
 })();
-  
