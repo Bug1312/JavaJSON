@@ -45,7 +45,7 @@ fetch(`https://api.github.com/repos/${repo}/releases`)
             addVersion(
                 release.tag_name,
                 timeDifference(new Date(release.published_at)),
-                `https://github.com/${repo}/blob/${release.tag_name}/changelog.md`
+                `https://github.com/${repo}/releases/tag/${release.tag_name}`
             )
         })
     })
